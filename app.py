@@ -31,7 +31,6 @@ def handler():
     print("========== NEUER BESUCH ==========")
     print(f"🕒 Zeit          : {now}")
     print(f"🌐 IP-Adresse   : {ip}")
-    print(f"🌐 Standort      : {Standort}")
     print(f"🧭 Browser       : {user_agent}")
     print(f"📡 Provider      : {provider}")
     print(f"👤 Echter Mensch : {menschlich}")
