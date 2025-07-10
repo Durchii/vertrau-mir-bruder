@@ -1,86 +1,97 @@
 from flask import Flask, request
-from datetime import datetime
-import logging
-import requests
 from user_agents import parse
+import requests
+from datetime import datetime
 
 app = Flask(__name__)
 
-# Logging konfigurieren
-logging.basicConfig(
-    filename="logs.txt",
-    level=logging.INFO,
-    format="%(asctime)s - %(message)s",
-    encoding="utf-8"
-)
+def is_human(user_agent):
+    bots = ["bot", "crawl", "spider", "preview", "facebookexternalhit", "WhatsApp", "Telegram"]
+    return not any(bot in user_agent.lower() for bot in bots)
 
-def get_ip_info(ip):
+def get_geo(ip):
     try:
-        res = requests.get(f"https://ipinfo.io/{ip}/json", timeout=3)
-        data = res.json()
-        return {
-            "city": data.get("city", "Unbekannt"),
-            "region": data.get("region", ""),
-            "country": data.get("country", "Unbekannt"),
-            "org": data.get("org", "Unbekannt"),
-        }
+        res = requests.get(f"http://ip-api.com/json/{ip}").json()
+        return res.get("city", "Unbekannt"), res.get("country", "Unbekannt")
     except:
-        return {
-            "city": "Unbekannt",
-            "region": "",
-            "country": "Unbekannt",
-            "org": "Unbekannt",
-        }
+        return "Unbekannt", "Unbekannt"
 
 @app.route("/")
-def track():
-    ip = request.headers.get("X-Forwarded-For", request.remote_addr)
-    user_agent = request.headers.get("User-Agent", "")
-    ref = request.headers.get("Referer", "")
-    lang = request.headers.get("Accept-Language", "").split(",")[0]
+def index():
+    now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
+    ip = request.headers.get('X-Forwarded-For', request.remote_addr)
+    ua_string = request.headers.get('User-Agent', '')
+    ua = parse(ua_string)
+    mensch = is_human(ua_string)
+    stadt, land = get_geo(ip)
 
-    ua = parse(user_agent)
-    location = get_ip_info(ip)
-
-    timestamp = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
-
-    # Browser-Fingerprint erzeugen
-    fingerprint = hash(f"{ip}_{lang}_{ua.browser.family}_{ua.os.family}")
-
-    log_entry = (
-        f"✅ Echter Klick erkannt!\\n"
-        f"🕒 Zeitpunkt       : {timestamp} UTC\\n"
-        f"🌍 IP-Adresse     : {ip}\\n"
-        f"📍 Standort       : {location['city']}, {location['region']} ({location['country']})\\n"
-        f"🏢 Provider       : {location['org']}\\n"
-        f"🖥️ Betriebssystem : {ua.os}\\n"
-        f"🌐 Browser        : {ua.browser}\\n"
-        f"🔗 Referrer       : {ref or 'Unbekannt'}\\n"
-        f"🈯 Sprache        : {lang}\\n"
-        f"🔐 Fingerprint    : {fingerprint}\\n"
-        f"{'-'*40}"
-    )
-
-    logging.info(log_entry)
+    print("🧠 Neuer Zugriff erkannt:")
+    print(f"   Zeitpunkt       : {now} UTC")
+    print(f"   IP-Adresse      : {ip}")
+    print(f"   Browser         : {ua.browser.family} {ua.browser.version_string}")
+    print(f"   Betriebssystem  : {ua.os.family} {ua.os.version_string}")
+    print(f"   Gerätetyp       : {ua.device.family}")
+    print(f"   User-Agent      : {ua_string}")
+    print(f"   Geostandort     : {stadt}, {land}")
+    print(f"   ECHTER MENSCH   : {'✅ JA' if mensch else '❌ NEIN'}")
+    print("-" * 50)
 
     return f"""
     <html>
-    <head><title>Danke für deinen Besuch</title></head>
-    <body style='font-family:sans-serif;'>
-        <h2 style='color:red;'>⚠️ Diese Daten wurden beim Klick übermittelt:</h2>
-        <ul>
-            <li><b>🧠 User-Agent</b>: {user_agent}</li>
-            <li><b>🌍 IP-Adresse</b>: {ip}</li>
-            <li><b>📍 Stadt</b>: {location['city']}</li>
-            <li><b>🖥️ Betriebssystem</b>: {ua.os}</li>
-            <li><b>🌐 Browser</b>: {ua.browser}</li>
-            <li><b>🈯 Sprache</b>: {lang}</li>
-            <li><b>🔗 Referrer</b>: {ref or 'Unbekannt'}</li>
-            <li><b>🔐 Fingerprint</b>: {fingerprint}</li>
-        </ul>
-        <p style='color:gray;'>All das wurde übermittelt, nur weil du den Link geöffnet hast.</p>
+    <head>
+        <title>Vertrau mir, Bruder</title>
+        <style>
+            body {{
+                background-color: #111;
+                color: #eee;
+                font-family: monospace;
+                text-align: center;
+                padding: 40px;
+            }}
+            .blink {{
+                color: red;
+                font-size: 28px;
+                animation: blink 1s infinite;
+            }}
+            @keyframes blink {{
+                0% {{ opacity: 1; }}
+                50% {{ opacity: 0; }}
+                100% {{ opacity: 1; }}
+            }}
+            button {{
+                background-color: #333;
+                border: none;
+                color: white;
+                padding: 12px 20px;
+                margin: 20px;
+                font-size: 16px;
+                cursor: pointer;
+            }}
+        </style>
+        <script>
+            function showData() {{
+                document.getElementById("datenbereich").style.display = "block";
+            }}
+        </script>
+    </head>
+    <body>
+        <h1 class="blink">CHECKST DU?!</h1>
+        <p>Du hast da echt draufgeklickt.</p>
+        <button onclick="showData()">Meine Daten zurück</button>
+
+        <div id="datenbereich" style="display:none; margin-top:30px;">
+            <h3>Diese Infos haben wir bekommen:</h3>
+            <ul style="text-align:left; display:inline-block;">
+                <li><b>IP-Adresse:</b> {ip}</li>
+                <li><b>Browser:</b> {ua.browser.family} {ua.browser.version_string}</li>
+                <li><b>System:</b> {ua.os.family} {ua.os.version_string}</li>
+                <li><b>Gerät:</b> {ua.device.family}</li>
+                <li><b>Standort:</b> {stadt}, {land}</li>
+                <li><b>Zeitpunkt:</b> {now} UTC</li>
+                <li><b>Echter Mensch:</b> {'✅ JA' if mensch else '❌ NEIN'}</li>
+            </ul>
+            <p style='color:gray;'>All das wurde übermittelt, nur weil du den Link geöffnet hast.</p>
+        </div>
     </body>
     </html>
     """
-
-
