@@ -17,8 +17,7 @@ def track():
     print(f"🖥️  User-Agent   : {ua}")
     print(f"🌐 Sprache      : {lang}")
     print(f"🔗 Referrer     : {ref}")
-    print("=====================
-")
+    print("=====================")
 
     return f"""    <html>
       <head>
