@@ -1,39 +1,39 @@
 from flask import Flask, request
 from datetime import datetime
-from user_agents import parse
 import requests
 
 app = Flask(__name__)
 
-def is_human(user_agent):
-    bots = ["bot", "crawl", "spider", "preview", "facebookexternalhit", "WhatsApp", "Telegram"]
-    return not any(bot in user_agent.lower() for bot in bots)
-
-def get_geo(ip):
+def get_provider(ip):
     try:
-        res = requests.get(f"http://ip-api.com/json/{ip}").json()
-        return res.get("city", "Unbekannt"), res.get("country", "Unbekannt")
+        response = requests.get(f"https://ipwho.is/{ip}", timeout=3)
+        data = response.json()
+        if data["success"]:
+            return data.get("isp", "unbekannt")
+        else:
+            return "unbekannt"
     except:
-        return "Unbekannt", "Unbekannt"
+        return "unbekannt"
 
 @app.route("/")
 def handler():
     now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
     ip = request.headers.get("X-Forwarded-For", request.remote_addr)
-    user_agent = request.headers.get("User-Agent", "")
-    ua = parse(user_agent)
-    menschlich = is_human(user_agent)
-    stadt, land = get_geo(ip)
+    user_agent = request.headers.get("User-Agent", "unbekannt")
+
+    # Provider abrufen
+    provider = get_provider(ip)
+
+    # Einfacher Bot/Mensch-Test
+    is_bot = any(bot in user_agent.lower() for bot in ["bot", "preview", "crawler", "spider", "whatsapp", "telegram"])
+    menschlich = "✅ JA" if not is_bot else "❌ NEIN"
 
     print("========== NEUER BESUCH ==========")
     print(f"🕒 Zeit          : {now}")
     print(f"🌐 IP-Adresse   : {ip}")
-    print(f"🧭 User-Agent    : {user_agent}")
-    print(f"🧠 Browser       : {ua.browser.family} {ua.browser.version_string}")
-    print(f"💻 System        : {ua.os.family} {ua.os.version_string}")
-    print(f"📱 Gerätetyp     : {ua.device.family}")
-    print(f"📍 Standort      : {stadt}, {land}")
-    print(f"👤 Echter Mensch : {'✅ JA' if menschlich else '❌ NEIN'}")
+    print(f"🧭 Browser       : {user_agent}")
+    print(f"📡 Provider      : {provider}")
+    print(f"👤 Echter Mensch : {menschlich}")
     print("==================================")
 
     return """
@@ -89,3 +89,6 @@ def handler():
     </body>
     </html>
     """
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", port=10000)
