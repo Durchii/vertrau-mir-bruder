@@ -1,7 +1,7 @@
 from flask import Flask, request
+from datetime import datetime
 from user_agents import parse
 import requests
-from datetime import datetime
 
 app = Flask(__name__)
 
@@ -17,81 +17,75 @@ def get_geo(ip):
         return "Unbekannt", "Unbekannt"
 
 @app.route("/")
-def index():
-    now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S")
-    ip = request.headers.get('X-Forwarded-For', request.remote_addr)
-    ua_string = request.headers.get('User-Agent', '')
-    ua = parse(ua_string)
-    mensch = is_human(ua_string)
+def handler():
+    now = datetime.utcnow().strftime("%Y-%m-%d %H:%M:%S UTC")
+    ip = request.headers.get("X-Forwarded-For", request.remote_addr)
+    user_agent = request.headers.get("User-Agent", "")
+    ua = parse(user_agent)
+    menschlich = is_human(user_agent)
     stadt, land = get_geo(ip)
 
-    print("🧠 Neuer Zugriff erkannt:")
-    print(f"   Zeitpunkt       : {now} UTC")
-    print(f"   IP-Adresse      : {ip}")
-    print(f"   Browser         : {ua.browser.family} {ua.browser.version_string}")
-    print(f"   Betriebssystem  : {ua.os.family} {ua.os.version_string}")
-    print(f"   Gerätetyp       : {ua.device.family}")
-    print(f"   User-Agent      : {ua_string}")
-    print(f"   Geostandort     : {stadt}, {land}")
-    print(f"   ECHTER MENSCH   : {'✅ JA' if mensch else '❌ NEIN'}")
-    print("-" * 50)
+    print("========== NEUER BESUCH ==========")
+    print(f"🕒 Zeit          : {now}")
+    print(f"🌐 IP-Adresse   : {ip}")
+    print(f"🧭 User-Agent    : {user_agent}")
+    print(f"🧠 Browser       : {ua.browser.family} {ua.browser.version_string}")
+    print(f"💻 System        : {ua.os.family} {ua.os.version_string}")
+    print(f"📱 Gerätetyp     : {ua.device.family}")
+    print(f"📍 Standort      : {stadt}, {land}")
+    print(f"👤 Echter Mensch : {'✅ JA' if menschlich else '❌ NEIN'}")
+    print("==================================")
 
-    return f"""
+    return """
+    <!DOCTYPE html>
     <html>
     <head>
-        <title>Vertrau mir, Bruder</title>
+        <title>Danke für deinen Besuch</title>
         <style>
-            body {{
-                background-color: #111;
-                color: #eee;
-                font-family: monospace;
+            body {
+                background-color: #f2f2f2;
+                font-family: Arial, sans-serif;
                 text-align: center;
-                padding: 40px;
-            }}
-            .blink {{
+                padding-top: 100px;
+            }
+            .warning {
                 color: red;
-                font-size: 28px;
+                font-size: 36px;
+                font-weight: bold;
                 animation: blink 1s infinite;
-            }}
-            @keyframes blink {{
-                0% {{ opacity: 1; }}
-                50% {{ opacity: 0; }}
-                100% {{ opacity: 1; }}
-            }}
-            button {{
-                background-color: #333;
-                border: none;
+            }
+            @keyframes blink {
+                0% { opacity: 1; }
+                50% { opacity: 0; }
+                100% { opacity: 1; }
+            }
+            .button {
+                margin-top: 30px;
+                padding: 15px 30px;
+                font-size: 18px;
+                background-color: #4CAF50;
                 color: white;
-                padding: 12px 20px;
-                margin: 20px;
-                font-size: 16px;
+                border: none;
+                border-radius: 5px;
                 cursor: pointer;
-            }}
+            }
+            .button:hover {
+                background-color: #45a049;
+            }
         </style>
         <script>
-            function showData() {{
-                document.getElementById("datenbereich").style.display = "block";
-            }}
+            function showMessage() {
+                alert("Oh mein Gott... wirklich? Dein Ernst? Wie kann man nur so beschränkt sein, dass du ehrlich jetzt noch hier auf diesen Button klickst? Wie man sieht, hast du nichts gecheckt. 50 Mark per PayPal an: info@bruder-ich-bin-wirklich-doof.de");
+            }
         </script>
     </head>
     <body>
-        <h1 class="blink">CHECKST DU?!</h1>
-        <p>Du hast da echt draufgeklickt.</p>
-        <button onclick="showData()">Meine Daten zurück</button>
-
-        <div id="datenbereich" style="display:none; margin-top:30px;">
-            <h3>Diese Infos haben wir bekommen:</h3>
-            <ul style="text-align:left; display:inline-block;">
-                <li><b>IP-Adresse:</b> {ip}</li>
-                <li><b>Browser:</b> {ua.browser.family} {ua.browser.version_string}</li>
-                <li><b>System:</b> {ua.os.family} {ua.os.version_string}</li>
-                <li><b>Gerät:</b> {ua.device.family}</li>
-                <li><b>Standort:</b> {stadt}, {land}</li>
-                <li><b>Zeitpunkt:</b> {now} UTC</li>
-                <li><b>Echter Mensch:</b> {'✅ JA' if mensch else '❌ NEIN'}</li>
-            </ul>
-            <p style='color:gray;'>All das wurde übermittelt, nur weil du den Link geöffnet hast.</p>
-        </div>
+        <h1>Danke für deinen Besuch!</h1>
+        <p>Oh mein Gott... wie dämlich kann man sein, einfach auf so einen Link zu klicken?</p>
+        <p>Vielen lieben Dank für deine ganzen privaten Daten, unter anderem auch deine Bankdaten und Login-Daten.</p>
+        <p style="color: red; font-weight: bold;">Vielleicht nicht jeden Link einfach anklicken, Bruder.</p>
+        <p class="warning">CHECKST DU?</p>
+        <button class="button" onclick="showMessage()">Ich will meine Daten zurück</button>
     </body>
     </html>
     """
